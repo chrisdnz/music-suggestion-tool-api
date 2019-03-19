@@ -45,7 +45,7 @@ app.get('/authorize', (req, res) => {
 
 app.get('/token', (req, res) => {
   // Request refresh and access token
-  var code = req.params.code || null;
+  var code = req.query.code || null;
   if (code !== null) {
     var accessOptions = {
       url: "https://accounts.spotify.com/api/token",
@@ -72,11 +72,16 @@ app.get('/token', (req, res) => {
           refresh_token
         });
       } else {
-        res.status(500).send(error);
+        console.log(body);
+        res.status(500).send('error were cause by spotify web services');
       }
     });
+  } else {
+    res.status(404).send('No code received');
   }
 });
+
+
 
 app.get('/refreshtoken', (req, res) => {
   // Get refresh token to request access
@@ -108,6 +113,17 @@ app.get('/refreshtoken', (req, res) => {
 
 // END SPOTIFY Web services setup
 
+
+/**
+ * Checkparams and perform request to spotify services
+ * @param {Object} request options 
+ * @
+ */
+
+
+ /**
+  * Recomentdation engine
+  */
 
 app.listen(PORT || 8080, () => {
   console.log(`Listening on port ${PORT || 8080}`)
