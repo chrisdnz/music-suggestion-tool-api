@@ -89,6 +89,9 @@ app.get('/refreshtoken', (req, res) => {
 
   var authOptions = {
     url: 'https://accounts.spotify.com/api/token',
+    headers: {
+      'Authorization': `Basic ${new Buffer(`${CLIENT_ID}:${CLIENT_SECRET}`).toString('base64')}`
+    },
     form: {
       grant_type: 'refresh_token',
       refresh_token: refresh_token
@@ -120,10 +123,73 @@ app.get('/refreshtoken', (req, res) => {
  * @
  */
 
+app.get('/call_spotify_services', (req, res) => {
+  var { access_token, refresh_token, method, endpoint, params } = req.query;
+  
+  if (access_token) {
+    let url = params ? `https://api.spotify.com${endpoint}?${querystring.stringify(JSON.parse(params))}` : `https://api.spotify.com${endpoint}`;
+    var requestOptions = {
+      url: url,
+      headers: {
+        'Authorization': `Bearer ${access_token}`
+      },
+      json: true
+    };
+    request[method](requestOptions, (error, response, body) => {
+      if (!error && (response.statusCode === 200)) {
+        //  Everything cool
+        res.status(200).send({...body});
+      } else if (response.statusCode === 401) {
+        //  Refresh token
+        var authOptions = {
+          url: 'https://accounts.spotify.com/api/token',
+          headers: {
+            'Authorization': `Basic ${new Buffer(`${CLIENT_ID}:${CLIENT_SECRET}`).toString('base64')}`
+          },
+          form: {
+            grant_type: 'refresh_token',
+            refresh_token: refresh_token
+          },
+          json: true
+        };
 
- /**
-  * Recomentdation engine
-  */
+        request.post(authOptions, (error_token, response_token, body_token) => {
+          if (!error_token && (response_token.statusCode === 200)) {
+            access_token = body_token.access_token;
+            
+            // Overwriting headers with new access token
+            requestOptions.headers = {
+              'Authorization': `Bearer ${access_token}`
+            }
+            // Making request
+            request[method](requestOptions, (error_new, response_new, body_new) => {
+              if (!error_new && (response_new.statusCode === 200)) {
+                //  Everything cool
+                res.status(200).send({
+                  ...body_new,
+                  access_token: access_token
+                });
+              } else {
+                res.status(500).send(error_new); // Very unhandled error.
+              }
+            });
+          } else {
+            res.status(500).send({...body});
+          }
+        });
+      } else {
+        res.status(500).send({...body});
+      }
+    });
+  } else {
+    res.status(500).send('No access_token provided');
+  }
+});
+
+
+/**
+ * Recomentdation engine
+ */
 
 app.listen(PORT || 8080, () => {
   console.log(`Listening on port ${PORT || 8080}`)
