@@ -33,7 +33,7 @@ app.use(cors())
  * 3) use token in requests to Web API and so on
  */
 app.get('/authorize', (req, res) => {
-  var scopes = 'user-read-email user-library-modify user-library-read playlist-modify-public';
+  var scopes = 'user-read-email user-library-modify user-library-read playlist-modify-public user-read-playback-state user-modify-playback-state user-read-currently-playing';
 
   res.redirect('https://accounts.spotify.com/authorize?' + querystring.stringify({
     response_type: 'code',
@@ -124,7 +124,7 @@ app.get('/refreshtoken', (req, res) => {
  */
 
 app.get('/call_spotify_services', (req, res) => {
-  var { access_token, refresh_token, method, endpoint, params } = req.query;
+  var { access_token, refresh_token, method, endpoint, params, body } = req.query;
   
   if (access_token) {
     let url = params ? `https://api.spotify.com${endpoint}?${querystring.stringify(JSON.parse(params))}` : `https://api.spotify.com${endpoint}`;
@@ -135,6 +135,9 @@ app.get('/call_spotify_services', (req, res) => {
       },
       json: true
     };
+    if (body) {
+      requestOptions.body = body;
+    }
     request[method](requestOptions, (error, response, body) => {
       if (!error && (response.statusCode === 200)) {
         //  Everything cool
