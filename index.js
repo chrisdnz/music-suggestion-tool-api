@@ -124,7 +124,7 @@ app.get('/refreshtoken', (req, res) => {
  */
 
 app.get('/call_spotify_services', (req, res) => {
-  var { access_token, refresh_token, method, endpoint, params, body } = req.query;
+  var { access_token, refresh_token, method, endpoint, params } = req.query;
   
   if (access_token) {
     let url = params ? `https://api.spotify.com${endpoint}?${querystring.stringify(JSON.parse(params))}` : `https://api.spotify.com${endpoint}`;
@@ -135,14 +135,11 @@ app.get('/call_spotify_services', (req, res) => {
       },
       json: true
     };
-    if (body) {
-      requestOptions.body = body;
-    }
     request[method](requestOptions, (error, response, body) => {
-      if (!error && (response.statusCode === 200)) {
+      if (!error && response && (response.statusCode === 200)) {
         //  Everything cool
         res.status(200).send({...body});
-      } else if (response.statusCode === 401) {
+      } else if (response && response.statusCode === 401) {
         //  Refresh token
         var authOptions = {
           url: 'https://accounts.spotify.com/api/token',
